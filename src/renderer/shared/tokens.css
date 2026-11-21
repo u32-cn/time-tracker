@@ -1,0 +1,80 @@
+/* 设计变量：亮色（暖纸）为默认，暗色是暖纸的夜间版 */
+:root {
+  --fs: 1;
+  --bg: #fdfaf4;
+  --bg-soft: #f7f1e4;
+  --bg-softer: #fffcf6;
+  --card: #fff8ea;
+  --line: #eae1d1;
+  --line-soft: #f0e9db;
+  --text: #2e2620;
+  --text-2: #6f6353;
+  --text-3: #a2947f;
+  --text-4: #c4b49b;
+  --accent: #c4703c;
+  --accent-dark: #9a5528;
+  --accent-light: #fff8ea;
+  --accent-track: #f0e4cc;
+  --warn: #d08a2e;
+  --warn-dark: #8a5a16;
+  --warn-light: #fff3dc;
+  --gray: #e4d9c6;
+  --gray-light: #f3ebdb;
+  --accent-hover: #b8672f;
+  --danger: #a3412d;
+  --success: #4f7a3a;
+  --stop-bg: #4a3a2e;
+  --stop-bg-hover: #3a2c22;
+  --shadow: rgba(74, 58, 36, 0.12);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --font: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  --serif: Georgia, "Times New Roman", "Songti SC", serif;
+}
+
+:root[data-theme='dark'] {
+  --bg: #16130f;
+  --bg-soft: #221d17;
+  --bg-softer: #1c1813;
+  --card: #241e18;
+  --line: #3a322a;
+  --line-soft: #2c2620;
+  --text: #f2eadf;
+  --text-2: #b5a793;
+  --text-3: #8a7c69;
+  --text-4: #63574a;
+  --accent: #d98653;
+  --accent-dark: #e8a578;
+  --accent-light: #2b2119;
+  --accent-track: #3a2d22;
+  --warn: #d9a24e;
+  --warn-dark: #e5bc74;
+  --warn-light: #2e2519;
+  --gray: #3e352c;
+  --gray-light: #271f19;
+  --accent-hover: #e59a6a;
+  --danger: #e08a72;
+  --success: #8fbf72;
+  --stop-bg: #4a3a2e;
+  --stop-bg-hover: #5c4936;
+  --shadow: rgba(0, 0, 0, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}

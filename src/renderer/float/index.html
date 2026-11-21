@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>每日学习计时器</title>
+  <link rel="stylesheet" href="../shared/tokens.css">
+  <link rel="stylesheet" href="./float.css">
+</head>
+<body>
+  <div class="capsule" id="capsule" data-u32-name="capsule">
+    <span class="dot" id="dot" data-u32-name="dot"></span>
+    <span class="clock num" id="clock" data-u32-name="clock">未开始</span>
+    <span class="sep" data-u32-name="sep"></span>
+    <span class="today num" id="today" data-u32-name="today">0m</span>
+    <button class="stop-btn" id="stopBtn" data-u32-name="stop-btn" title="停止本次" hidden>
+      <span class="stop-icon"></span>
+    </button>
+  </div>
+  <script src="./float.js"></script>
+</body>
+</html>

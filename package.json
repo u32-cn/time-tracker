@@ -1,0 +1,57 @@
+{
+  "name": "daily-study-timer",
+  "productName": "每日学习计时器",
+  "version": "0.2.0",
+  "description": "Windows 桌面学习计时器，锁屏、睡眠、无操作都会自动结束计时",
+  "main": "src/main/index.js",
+  "private": false,
+  "author": "vtxf",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/u32/time-tracker.git"
+  },
+  "scripts": {
+    "start": "node scripts/dev.js",
+    "test": "node test/tracker.test.js",
+    "icon": "node scripts/make-icon.js",
+    "dist": "electron-builder --win nsis --publish never"
+  },
+  "build": {
+    "appId": "cn.u32.daily-study-timer",
+    "productName": "每日学习计时器",
+    "executableName": "time-tracker",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "build/icon.ico",
+      "package.json"
+    ],
+    "publish": {
+      "provider": "generic",
+      "url": "https://local.invalid/updates"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "每日学习计时器",
+      "artifactName": "time-tracker-setup-${version}.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "33.4.11",
+    "electron-builder": "^25.1.8"
+  }
+}

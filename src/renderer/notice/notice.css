@@ -1,0 +1,86 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+}
+
+body {
+  padding: 6px;
+}
+
+.card {
+  height: 100%;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 8px 24px var(--shadow);
+}
+
+.icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 9px;
+}
+
+.icon.warn {
+  background: var(--warn-light);
+}
+
+.title {
+  font-size: calc(14px * var(--fs));
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 5px;
+}
+
+.desc {
+  font-size: calc(12px * var(--fs));
+  line-height: 1.7;
+  color: var(--text-2);
+  text-align: center;
+}
+
+.hint {
+  margin-top: 9px;
+  padding: 7px 10px;
+  background: var(--warn-light);
+  border-radius: 8px;
+  font-size: calc(11px * var(--fs));
+  line-height: 1.6;
+  color: var(--warn-dark);
+  width: 100%;
+  text-align: center;
+}
+
+.hint[hidden] {
+  display: none;
+}
+
+.ok {
+  margin-top: auto;
+  width: 100%;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font);
+  font-size: calc(12px * var(--fs));
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ok:hover {
+  background: var(--accent-hover);
+}
