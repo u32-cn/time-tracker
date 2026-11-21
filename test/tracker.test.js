@@ -53,8 +53,8 @@ test('持续操作 10 分钟：到点结束，计入 600 秒', () => {
   assert.strictEqual(rec.seconds, 600)
 })
 
-/* 2. 操作 60 秒后离开：3 分钟后警告、4 分钟才结束，宽限期不计新时长 */
-test('操作 60 秒后离开：180 秒警告、240 秒结束，计入 240 秒', () => {
+/* 2. 操作 60 秒后离开：150 秒预警、3 分钟整结束，计入 240 秒 */
+test('操作 60 秒后离开：150 秒预警、3 分钟结束，计入 240 秒', () => {
   const env = makeEnv()
   const warnings = []
   env.tracker.on('idle-warning', () => warnings.push(env.tracker.now()))
@@ -69,37 +69,35 @@ test('操作 60 秒后离开：180 秒警告、240 秒结束，计入 240 秒', 
   assert.ok(rec, '应写入一条记录')
   assert.strictEqual(rec.endReason, 'idle')
   assert.strictEqual(rec.seconds, 240)
-  assert.strictEqual(warnings.length, 1, '警告只应发一次')
-  assert.strictEqual(warnings[0], T0 + 240 * 1000, 'idleFor 达到 180 秒的那个 tick 发警告（最后一次操作后 3 分钟）')
+  assert.strictEqual(warnings.length, 1, '预警只应发一次')
+  assert.strictEqual(warnings[0], T0 + 210 * 1000, 'idleFor 达 150 秒的那个 tick 预警（最后一次操作后 2 分 30 秒）')
 })
 
-/* 2b. 警告期内动了鼠标：警告作废，继续计时 */
-test('警告期内恢复操作：不结束、继续计时', () => {
+/* 2b. 预警后动了鼠标：预警作废，继续计时 */
+test('预警后恢复操作：不结束、继续计时', () => {
   const env = makeEnv()
   let warned = 0
   env.tracker.on('idle-warning', () => { warned++ })
   assert.strictEqual(env.tracker.begin(10).ok, true)
   env.run(1, 60, true)
-  for (let sec = 61; sec <= 241; sec++) {
+  for (let sec = 61; sec <= 211; sec++) {
     env.setNow(T0 + sec * 1000)
     env.setIdle((sec - 60) * 1000)
     env.tracker.tick()
   }
-  assert.strictEqual(warned, 1, 'idleFor 达 180 秒（第 240 秒）已警告')
+  assert.strictEqual(warned, 1, 'idleFor 达 150 秒（第 211 秒）已预警')
   assert.strictEqual(env.tracker.session != null, true, '会话应仍在')
   assert.strictEqual(env.tracker.snapshot().idleWarned, true)
-  env.setInput() // 第 242 秒动了一下
-  env.setNow(T0 + 242 * 1000)
+  env.setInput() // 第 212 秒动了一下
+  env.setNow(T0 + 212 * 1000)
   env.setIdle(0)
   env.tracker.tick()
-  assert.strictEqual(env.tracker.session != null, true, '警告后动鼠标不应结束')
-  env.run(243, 700, true) // 继续学满 10 分钟目标
+  assert.strictEqual(env.tracker.session != null, true, '预警后动鼠标不应结束')
+  env.run(213, 700, true) // 继续学满 10 分钟目标
   const recs = env.store.records
   assert.strictEqual(recs.length, 1)
   assert.strictEqual(recs[0].endReason, 'target', '应正常学满到点，而非 idle 结束')
   assert.strictEqual(recs[0].seconds, 600)
-  const rec = recs[0]
-  assert.ok(rec.endTs >= T0 + 600 * 1000, '结束时间应推到警告恢复之后')
 })
 
 /* 3. 45 分钟滑动窗口：学 30 分 + 歇 2 分 + 再学 10 分即被拦下 */

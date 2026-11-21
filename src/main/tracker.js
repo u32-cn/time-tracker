@@ -5,8 +5,8 @@ const { powerMonitor } = require('electron')
 const { dayStartTs, overlapMs, uid, recordSegments } = require('./time')
 
 const TICK_MS = 1000                        // 采样/记账粒度
-const IDLE_STOP_MS = 180 * 1000             // 无操作 3 分钟：先警告，写死不放设置
-const IDLE_WARN_EXTRA_MS = 60 * 1000        // 警告后仍无操作，再宽限 1 分钟才结束
+const IDLE_STOP_MS = 180 * 1000             // 无操作 3 分钟即结束，写死不放设置
+const IDLE_WARN_AT_MS = 150 * 1000          // 无操作 2 分 30 秒时预警一次
 const REST_WINDOW_MS = 45 * 60 * 1000       // 滑动窗口 45 分钟
 const REST_GAP_MS = 5 * 60 * 1000           // 窗口内最低休息 5 分钟
 const MAX_STUDY_MS = REST_WINDOW_MS - REST_GAP_MS  // 由此推出单次上限 40 分钟
@@ -75,9 +75,9 @@ class Tracker extends EventEmitter {
       const idleFor = now - s.lastInputTs
       if (s.accruedMs >= s.targetSec * 1000) {
         this.stop('target')
-      } else if (idleFor >= IDLE_STOP_MS + IDLE_WARN_EXTRA_MS) {
+      } else if (idleFor >= IDLE_STOP_MS) {
         this.stop('idle')
-      } else if (idleFor >= IDLE_STOP_MS && !this.idleWarned) {
+      } else if (idleFor >= IDLE_WARN_AT_MS && !this.idleWarned) {
         this.idleWarned = true
         this.emit('idle-warning', this.snapshot())
       } else if (this.studiedMsInWindow(now) > MAX_STUDY_MS) {
@@ -253,7 +253,7 @@ class Tracker extends EventEmitter {
       remainingMs: s ? Math.max(0, s.targetSec * 1000 - s.accruedMs) : 0,
       idleMs: s ? Math.max(0, now - s.lastInputTs) : 0,
       idleWarned: !!s && this.idleWarned,
-      remainingWarnMs: s ? Math.max(0, IDLE_STOP_MS + IDLE_WARN_EXTRA_MS - (now - s.lastInputTs)) : 0,
+      remainingWarnMs: s ? Math.max(0, IDLE_STOP_MS - (now - s.lastInputTs)) : 0,
       segments: s ? s.segments : [],
       todayMs: this.todayMs(now),
       restMs,
@@ -266,4 +266,4 @@ class Tracker extends EventEmitter {
   }
 }
 
-module.exports = { Tracker, IDLE_STOP_MS, IDLE_WARN_EXTRA_MS, REST_WINDOW_MS, REST_GAP_MS, MAX_STUDY_MS }
+module.exports = { Tracker, IDLE_STOP_MS, IDLE_WARN_AT_MS, REST_WINDOW_MS, REST_GAP_MS, MAX_STUDY_MS }
