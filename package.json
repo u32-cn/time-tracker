@@ -1,7 +1,7 @@
 {
   "name": "daily-study-timer",
   "productName": "每日学习计时器",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Windows 桌面学习计时器，锁屏、睡眠、无操作都会自动结束计时",
   "main": "src/main/index.js",
   "private": false,
