@@ -259,6 +259,8 @@ function hideLogs() {
 }
 
 function createNotice(payload) {
+  // 先销毁旧窗再设 flag：destroy 会同步触发 'closed' 回调，
+  // 若先赋值会被回调里的 noticeAutoClose = false 覆盖，导致结束弹窗无法自动关闭
   if (noticeWin && !noticeWin.isDestroyed()) noticeWin.destroy()
   noticeAutoClose = payload.reason === 'idle' || payload.reason === 'idle-warning'
   noticeWin = new BrowserWindow({
