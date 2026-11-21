@@ -37,6 +37,17 @@ class Tracker extends EventEmitter {
     return this._now()
   }
 
+  /** 仅 TT_DEBUG=1 时把每次 tick 的输入采样写到启动日志 */
+  debugTick(msg) {
+    if (!process.env.TT_DEBUG) return
+    try {
+      require('node:fs').appendFileSync(
+        require('node:os').tmpdir() + '/tt-tick.log',
+        `[${new Date().toISOString()}] ${msg}\n`
+      )
+    } catch { /* 日志失败不影响计时 */ }
+  }
+
   start() {
     this.recover()
     if (!this.pmBound && powerMonitor && typeof powerMonitor.on === 'function') {
@@ -62,20 +73,25 @@ class Tracker extends EventEmitter {
 
     const idleMs = this._idle()
     this.systemIdleMs = idleMs
+    this.debugTick(`tick t=+${((now - (this.bootTs || (this.bootTs = now))) / 1000).toFixed(1)}s idle=${(idleMs / 1000).toFixed(1)}s`)
 
     if (this.session) {
       const s = this.session
-      if (idleMs < TICK_MS + 500) {
+      const refreshed = idleMs < TICK_MS + 500
+      if (refreshed) {
         s.lastInputTs = now - idleMs
         this.idleWarned = false
       }
+      this.debugTick(`  session idleFor=${((now - s.lastInputTs) / 1000).toFixed(1)}s refreshed=${refreshed}`)
 
       this.settle(s, now)
 
       const idleFor = now - s.lastInputTs
       if (s.accruedMs >= s.targetSec * 1000) {
+        this.debugTick('  STOP target')
         this.stop('target')
       } else if (idleFor >= IDLE_STOP_MS) {
+        this.debugTick(`  STOP idle (idleFor=${(idleFor / 1000).toFixed(1)}s, tickIdle=${(idleMs / 1000).toFixed(1)}s)`)
         this.stop('idle')
       } else if (idleFor >= IDLE_WARN_AT_MS && !this.idleWarned) {
         this.idleWarned = true
