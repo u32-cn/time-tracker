@@ -7,6 +7,7 @@ const dot = $('dot')
 const clock = $('clock')
 const today = $('today')
 const stopBtn = $('stopBtn')
+const playBtn = $('playBtn')
 
 let prevRunning = false
 let flash = null
@@ -40,6 +41,13 @@ function fmtMinSec(ms) {
   return `${Math.floor(total / 60)}:${pad(total % 60)}`
 }
 
+function fmtRest(ms) {
+  const total = Math.max(0, Math.round(ms / 1000))
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  return m > 0 ? `${m}分${pad(s)}秒` : `${s}秒`
+}
+
 function applySettings(s) {
   if (!s) return
   document.documentElement.dataset.theme = s.theme === 'dark' ? 'dark' : 'light'
@@ -56,6 +64,7 @@ function render(s) {
     clock.className = 'clock num warn'
     clock.textContent = flash.text
     stopBtn.hidden = true
+    playBtn.hidden = true
     return
   }
   flash = null
@@ -64,6 +73,7 @@ function render(s) {
     clock.className = 'clock num'
     clock.textContent = fmtClock(s.remainingMs)
     stopBtn.hidden = false
+    playBtn.hidden = true
     if (s.idleMs >= 60000) {
       dot.className = 'dot warn'
       clock.classList.add('warn')
@@ -74,10 +84,19 @@ function render(s) {
       dot.className = 'dot run'
     }
   } else {
-    clock.className = 'clock num idle-text'
-    clock.textContent = '未开始'
     stopBtn.hidden = true
-    dot.className = s.canStart ? 'dot' : 'dot warn'
+    if (s.canStart) {
+      playBtn.hidden = false
+      playBtn.title = `开始学习 ${fmtDurMin(s.maxStudyMs)}`
+      clock.className = 'clock num idle-text'
+      clock.textContent = '未开始'
+      dot.className = 'dot'
+    } else {
+      playBtn.hidden = true
+      clock.className = 'clock num idle-text warn'
+      clock.textContent = `休息 ${fmtRest(s.restWaitMs)}`
+      dot.className = 'dot warn'
+    }
   }
 
   if (prevRunning && !s.running && !flash) {
@@ -87,6 +106,11 @@ function render(s) {
     clock.textContent = flash.text
   }
   prevRunning = s.running
+}
+
+function fmtDurMin(ms) {
+  const min = Math.max(1, Math.ceil(ms / 60000))
+  return `${min} 分钟`
 }
 
 /* ---------- 拖动 / 点击 ---------- */
@@ -134,6 +158,15 @@ stopBtn.addEventListener('mousedown', (e) => e.stopPropagation())
 stopBtn.addEventListener('click', async (e) => {
   e.stopPropagation()
   await window.api.stop()
+})
+
+playBtn.addEventListener('mousedown', (e) => e.stopPropagation())
+playBtn.addEventListener('click', async (e) => {
+  e.stopPropagation()
+  const res = await window.api.quickStart()
+  if (res && !res.ok) {
+    flash = { text: '还需休息', until: Date.now() + 2600 }
+  }
 })
 
 /* ---------- 启动 ---------- */

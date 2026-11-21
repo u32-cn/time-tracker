@@ -64,6 +64,19 @@ class Store {
     this.data.records.push(record)
   }
 
+  /** 与现有 active 记录的段是否有时间重叠（排除 excludeId 自身） */
+  hasOverlap(startTs, endTs, excludeId = null) {
+    for (const rec of this.data.records) {
+      if (rec.status !== 'active') continue
+      if (excludeId && rec.id === excludeId) continue
+      const segs = Array.isArray(rec.segments) && rec.segments.length ? rec.segments : [[rec.startTs, rec.endTs]]
+      for (const [a, b] of segs) {
+        if (Math.max(a, startTs) < Math.min(b, endTs)) return true
+      }
+    }
+    return false
+  }
+
   updateRecord(id, patch) {
     const rec = this.data.records.find((r) => r.id === id)
     if (rec) Object.assign(rec, patch)

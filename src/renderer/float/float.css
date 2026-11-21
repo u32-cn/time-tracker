@@ -74,6 +74,23 @@ body.dragging .capsule {
   white-space: nowrap;
 }
 
+.play-btn {
+  margin-left: auto;
+}
+
+.play-btn .play-icon {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 4px 0 4px 7px;
+  border-color: transparent transparent transparent var(--text-3);
+  display: block;
+}
+
+.play-btn:hover .play-icon {
+  border-left-color: var(--accent);
+}
+
 .stop-btn {
   margin-left: auto;
   width: 18px;

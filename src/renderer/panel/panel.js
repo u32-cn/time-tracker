@@ -133,7 +133,7 @@ function renderState() {
     el.stateChip.textContent = idleWarn ? `无操作 ${Math.floor(state.idleMs / 1000)} 秒` : '计时中'
     el.stateChip.className = 'chip ' + (idleWarn ? 'warn' : 'running')
   } else if (!state.canStart) {
-    el.stateChip.textContent = '需休息'
+    el.stateChip.textContent = `休息 ${fmtMinSec(state.restWaitMs)}`
     el.stateChip.className = 'chip warn'
   } else {
     el.stateChip.textContent = '未开始'
@@ -154,7 +154,7 @@ function renderState() {
     el.restHint.textContent = `还需休息 ${fmtMinSec(state.restWaitMs)} 才能开始`
     el.restHint.className = 'rest-hint warn'
   } else {
-    el.restHint.textContent = `还能学 ${fmtDur(state.maxStudyMs)}，之后必须休息`
+    el.restHint.textContent = `可一次学 ${fmtDur(state.maxStudyMs)}，之后必须休息`
     el.restHint.className = 'rest-hint warn'
   }
 
@@ -171,7 +171,7 @@ function renderState() {
       el.mainBtn.textContent = '开始学习'
       el.mainBtn.disabled = false
     } else {
-      el.mainBtn.textContent = `还需休息 ${fmtMinSec(state.restWaitMs)}`
+      el.mainBtn.textContent = `休息 ${fmtMinSec(state.restWaitMs)}`
       el.mainBtn.disabled = true
     }
   }
@@ -329,7 +329,12 @@ el.manualSave.addEventListener('click', async () => {
 
   const res = await window.api.addManual({ startTs, endTs, note: el.manualNote.value.trim() })
   if (!res.ok) {
-    el.manualMsg.textContent = res.error === 'tooShort' ? '至少 1 分钟' : '时间不合法'
+    const msgs = {
+      tooShort: '至少 1 分钟',
+      range: '时间不合法',
+      overlap: '与已有记录时间重叠'
+    }
+    el.manualMsg.textContent = msgs[res.error] || '保存失败'
     el.manualMsg.className = 'form-msg err'
     return
   }

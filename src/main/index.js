@@ -367,6 +367,15 @@ function registerIpc() {
     return res
   })
 
+  ipcMain.handle('session:quick-start', () => {
+    const pre = tracker.canStart()
+    if (!pre.ok) return pre
+    const min = Math.max(1, Math.ceil(pre.maxStudyMs / 60000))
+    const res = tracker.begin(min)
+    broadcastState()
+    return res
+  })
+
   ipcMain.handle('session:stop', () => {
     const rec = tracker.stop('manual')
     broadcastState()
@@ -404,6 +413,7 @@ function registerIpc() {
     if (!(endTs > startTs)) return { ok: false, error: 'range' }
     const seconds = Math.round((endTs - startTs) / 1000)
     if (seconds < 60) return { ok: false, error: 'tooShort' }
+    if (store.hasOverlap(startTs, endTs)) return { ok: false, error: 'overlap' }
     const rec = {
       id: `m${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
       startTs,
@@ -493,7 +503,8 @@ if (!gotLock) {
 
     tracker.on('ended', ({ record, reason }) => {
       refreshTray()
-      if (reason === 'lock' || reason === 'sleep' || reason === 'crash') {
+      /* 手动停止不弹窗不响铃，静默结束 */
+      if (reason === 'lock' || reason === 'sleep' || reason === 'crash' || reason === 'manual') {
         broadcastState()
         return
       }

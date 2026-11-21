@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('api', {
   getState: () => ipcRenderer.invoke('state:get'),
   onState: (cb) => ipcRenderer.on('state', (_e, s) => cb(s)),
   start: (min) => ipcRenderer.invoke('session:start', min),
+  quickStart: () => ipcRenderer.invoke('session:quick-start'),
   stop: () => ipcRenderer.invoke('session:stop'),
   openPanel: () => ipcRenderer.invoke('panel:open'),
   hidePanel: () => ipcRenderer.invoke('panel:hide'),

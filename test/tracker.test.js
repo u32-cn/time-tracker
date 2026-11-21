@@ -180,6 +180,28 @@ test('跨零点时今日时长只算当天部分', () => {
   assert.strictEqual(Math.round(snap.todayMs / 1000), 1800, '今天只应算零点后的 30 分钟')
 })
 
+/* 7. 记录时间不允许重叠 */
+test('补记与已有记录时间重叠：拒绝写入', () => {
+  const env = makeEnv()
+  env.store.addRecord({
+    id: 'x3',
+    startTs: T0,
+    endTs: T0 + 1800 * 1000,
+    dayStartTs: new Date(T0).setHours(0, 0, 0, 0),
+    seconds: 1800,
+    segments: [[T0, T0 + 1800 * 1000]],
+    targetSec: 0,
+    source: 'manual',
+    status: 'active',
+    endReason: 'manual'
+  })
+  assert.strictEqual(env.store.hasOverlap(T0 + 600 * 1000, T0 + 1200 * 1000), true, '完全落在已有段内')
+  assert.strictEqual(env.store.hasOverlap(T0 + 1700 * 1000, T0 + 2300 * 1000), true, '半重叠')
+  assert.strictEqual(env.store.hasOverlap(T0 + 1800 * 1000, T0 + 2400 * 1000), false, '首尾相接不算重叠')
+  assert.strictEqual(env.store.hasOverlap(T0 - 600 * 1000, T0 - 1000), false, '之前时段不重叠')
+  assert.strictEqual(env.store.hasOverlap(T0, T0 + 600 * 1000, 'x3'), false, '排除自身后不算重叠')
+})
+
 console.log('')
 for (const [status, name] of results) {
   console.log(`${status === 'PASS' ? '✓' : '✗'} ${name}`)
