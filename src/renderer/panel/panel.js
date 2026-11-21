@@ -23,8 +23,8 @@ const el = {
   timeline: $('timeline'),
   week: $('week'),
   weekSub: $('weekSub'),
-  log: $('log'),
-  logSub: $('logSub'),
+  logsBtn: $('logsBtn'),
+  logsLink: $('logsLink'),
   settingsBtn: $('settingsBtn'),
   settingsSheet: $('settingsSheet'),
   settingsClose: $('settingsClose'),
@@ -42,16 +42,6 @@ let lastSessionId = null
 let lastSettingsKey = ''
 
 const DAY_MS = 86400000
-const REASON_TEXT = {
-  target: '时间到',
-  rest: '休息不足',
-  idle: '无操作 3 分钟',
-  lock: '锁屏',
-  sleep: '睡眠',
-  manual: '手动停止',
-  crash: '异常退出'
-}
-const REASON_WARN = new Set(['rest', 'idle', 'lock', 'sleep', 'crash'])
 
 function pad(n) {
   return String(n).padStart(2, '0')
@@ -280,103 +270,10 @@ function renderWeek() {
   el.weekSub.textContent = total > 0 ? `合计 ${fmtDur(total)}` : ''
 }
 
-/* ---------- 记录 ---------- */
-function renderLog() {
-  el.log.innerHTML = ''
-  const list = records.filter((r) => r.status === 'active' || r.source === 'timer').slice(0, 60)
-  el.logSub.textContent = records.length > 0 ? `共 ${records.length} 条` : ''
-
-  if (state && state.running) {
-    const live = document.createElement('li')
-    live.className = 'log-item'
-    live.dataset.u32Name = 'log-item-live'
-    const badge = document.createElement('span')
-    badge.className = 'badge timer'
-    badge.dataset.u32Name = 'log-badge-live'
-    badge.textContent = '进行中'
-    const main = document.createElement('div')
-    main.className = 'log-main'
-    main.dataset.u32Name = 'log-main-live'
-    const line = document.createElement('div')
-    line.className = 'log-line'
-    line.dataset.u32Name = 'log-line-live'
-    line.innerHTML = `现在 <span class="dim">· 本次 ${fmtMinSec(state.elapsedMs)} · 剩余 ${fmtMinSec(state.remainingMs)}</span>`
-    main.appendChild(line)
-    live.appendChild(badge)
-    live.appendChild(main)
-    el.log.appendChild(live)
-  }
-
-  if (list.length === 0) {
-    if (state && state.running) return
-    const li = document.createElement('li')
-    li.className = 'log-empty'
-    li.dataset.u32Name = 'log-empty'
-    li.textContent = '还没有记录'
-    el.log.appendChild(li)
-    return
-  }
-
-  for (const r of list) {
-    const li = document.createElement('li')
-    li.className = 'log-item' + (r.status === 'void' ? ' void' : '')
-    li.dataset.u32Name = 'log-item'
-
-    const badge = document.createElement('span')
-    badge.className = 'badge ' + (r.status === 'void' ? 'void' : r.source)
-    badge.dataset.u32Name = 'log-badge'
-    badge.textContent = r.status === 'void' ? '已作废' : r.source === 'timer' ? '计时' : '补记'
-    li.appendChild(badge)
-
-    const main = document.createElement('div')
-    main.className = 'log-main'
-    main.dataset.u32Name = 'log-main'
-
-    const line = document.createElement('div')
-    line.className = 'log-line'
-    line.dataset.u32Name = 'log-line'
-    const day = r.dayStartTs === dayStartOf(Date.now()) ? '今天' : `${new Date(r.startTs).getMonth() + 1}/${new Date(r.startTs).getDate()}`
-    line.innerHTML = `${day} ${hm(r.startTs)} ~ ${hm(r.endTs)} <span class="dim">· ${fmtDur(r.seconds * 1000)}</span>`
-    main.appendChild(line)
-
-    const reasonText = r.source === 'manual' ? r.note : REASON_TEXT[r.endReason] || ''
-    if (reasonText) {
-      const reason = document.createElement('div')
-      reason.className = 'log-reason' + (REASON_WARN.has(r.endReason) ? ' warn' : '')
-      reason.dataset.u32Name = 'log-reason'
-      reason.textContent = reasonText
-      main.appendChild(reason)
-    }
-
-    li.appendChild(main)
-
-    const action = document.createElement('button')
-    action.className = 'log-action'
-    action.dataset.u32Name = 'log-action'
-    if (r.source === 'timer') {
-      action.textContent = r.status === 'void' ? '启用' : '作废'
-      action.addEventListener('click', async () => {
-        await window.api.setStatus(r.id, r.status === 'void' ? 'active' : 'void')
-        await loadRecords()
-      })
-    } else {
-      action.textContent = '删除'
-      action.addEventListener('click', async () => {
-        await window.api.removeRecord(r.id)
-        await loadRecords()
-      })
-    }
-    li.appendChild(action)
-
-    el.log.appendChild(li)
-  }
-}
-
 async function loadRecords() {
   records = await window.api.records()
   renderTimeline()
   renderWeek()
-  renderLog()
   if (state) renderState()
 }
 
@@ -477,6 +374,9 @@ el.setAutoLaunch.addEventListener('change', () => {
 el.setSound.addEventListener('change', () => {
   window.api.setSettings({ sound: el.setSound.checked })
 })
+
+el.logsBtn.addEventListener('click', () => window.api.openLogs())
+el.logsLink.addEventListener('click', () => window.api.openLogs())
 
 el.closeBtn.addEventListener('click', () => window.api.hidePanel())
 

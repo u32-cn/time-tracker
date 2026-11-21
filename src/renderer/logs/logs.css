@@ -1,0 +1,206 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+body {
+  font-size: calc(13px * var(--fs));
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg);
+}
+
+/* ---------- 标题栏 ---------- */
+.bar {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 14px 0 24px;
+  flex: 0 0 48px;
+  -webkit-app-region: drag;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.brand {
+  font-size: calc(13px * var(--fs));
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.bar-right {
+  margin-left: auto;
+  -webkit-app-region: no-drag;
+}
+
+.icon-btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--text-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: var(--bg-soft);
+  color: var(--text-2);
+}
+
+/* ---------- 概览 ---------- */
+.summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 18px 24px 14px;
+  flex: 0 0 auto;
+}
+
+.summary-main {
+  font-family: var(--serif);
+  font-size: calc(22px * var(--fs));
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-sub {
+  font-size: calc(12px * var(--fs));
+  color: var(--text-3);
+}
+
+/* ---------- 列表 ---------- */
+.list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 24px;
+}
+
+.list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.list::-webkit-scrollbar-thumb {
+  background: var(--gray);
+  border-radius: 3px;
+}
+
+.list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.day-head {
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  padding: 10px 0 7px;
+  font-size: calc(11px * var(--fs));
+  color: var(--text-3);
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.row.void {
+  opacity: 0.42;
+}
+
+.mark {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: 0 0 5px;
+}
+
+.mark.manual {
+  background: var(--text-4);
+}
+
+.mark.void-mark {
+  background: transparent;
+  border: 1px solid var(--text-4);
+}
+
+.range {
+  font-size: calc(13px * var(--fs));
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dur {
+  font-size: calc(12px * var(--fs));
+  color: var(--text-3);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.reason {
+  font-size: calc(11px * var(--fs));
+  color: var(--text-3);
+  white-space: nowrap;
+  flex: 0 0 auto;
+  min-width: 62px;
+  text-align: right;
+}
+
+.reason.warn {
+  color: var(--warn-dark);
+}
+
+.action {
+  border: none;
+  background: transparent;
+  font-family: var(--font);
+  font-size: calc(11px * var(--fs));
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 5px;
+  flex: 0 0 auto;
+  min-width: 40px;
+}
+
+.action:hover {
+  background: var(--bg-soft);
+  color: var(--text-2);
+}
+
+.empty {
+  padding: 40px 0;
+  text-align: center;
+  font-size: calc(12px * var(--fs));
+  color: var(--text-4);
+}
+
+/* ---------- 底部 ---------- */
+.foot {
+  flex: 0 0 auto;
+  padding: 10px 24px 14px;
+  border-top: 1px solid var(--line-soft);
+  font-size: calc(11px * var(--fs));
+  color: var(--text-4);
+}

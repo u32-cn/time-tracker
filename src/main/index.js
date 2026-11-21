@@ -9,13 +9,15 @@ const { Tracker } = require('./tracker')
 const FLOAT_BASE_W = 224
 const FLOAT_BASE_H = 40
 const PANEL_W = 640
-const PANEL_H = 760
+const PANEL_H = 640
+const LOGS_W = 640
+const LOGS_H = 620
 const NOTICE_W = 340
 const NOTICE_H = 226
 
 /** 浮窗尺寸随字号缩放，保持内容不溢出 */
 function floatSize(fontScale) {
-  const s = Math.max(0.85, Math.min(1.2, Number(fontScale) || 1))
+  const s = Math.max(0.8, Math.min(1.6, Number(fontScale) || 1.2))
   return { width: Math.round(FLOAT_BASE_W * s), height: Math.round(FLOAT_BASE_H * s) }
 }
 
@@ -23,6 +25,7 @@ let store = null
 let tracker = null
 let floatWin = null
 let panelWin = null
+let logsWin = null
 let noticeWin = null
 let tray = null
 let noticeShownAt = 0
@@ -211,6 +214,50 @@ function hidePanel() {
   if (panelWin && !panelWin.isDestroyed()) panelWin.hide()
 }
 
+function createLogs() {
+  logsWin = new BrowserWindow({
+    width: LOGS_W,
+    height: LOGS_H,
+    frame: false,
+    resizable: false,
+    maximizable: false,
+    show: false,
+    skipTaskbar: false,
+    backgroundColor: '#FDFAF4',
+    webPreferences: {
+      preload: preloadPath('logs'),
+      contextIsolation: true,
+      sandbox: true,
+      backgroundThrottling: false
+    }
+  })
+  logsWin.loadFile(rendererPath('logs', 'index.html'))
+  logsWin.on('close', (e) => {
+    if (!quitting) {
+      e.preventDefault()
+      logsWin.hide()
+    }
+  })
+  logsWin.on('closed', () => { logsWin = null })
+}
+
+function showLogs() {
+  if (!logsWin || logsWin.isDestroyed()) createLogs()
+  const display = screen.getPrimaryDisplay()
+  const area = display.workArea
+  logsWin.setPosition(
+    Math.round(area.x + (area.width - LOGS_W) / 2),
+    Math.round(area.y + (area.height - LOGS_H) / 2)
+  )
+  logsWin.show()
+  logsWin.focus()
+  logsWin.webContents.send('logs:refresh')
+}
+
+function hideLogs() {
+  if (logsWin && !logsWin.isDestroyed()) logsWin.hide()
+}
+
 function createNotice(payload) {
   if (noticeWin && !noticeWin.isDestroyed()) noticeWin.destroy()
   noticeAutoClose = payload.reason === 'idle'
@@ -297,7 +344,7 @@ function broadcastState() {
   const snap = tracker ? tracker.snapshot() : null
   if (!snap) return
   snap.settings = store.settings
-  for (const win of [floatWin, panelWin]) {
+  for (const win of [floatWin, panelWin, logsWin]) {
     if (win && !win.isDestroyed() && win.webContents && !win.webContents.isDestroyed()) {
       win.webContents.send('state', snap)
     }
@@ -326,6 +373,8 @@ function registerIpc() {
 
   ipcMain.handle('panel:open', () => { showPanel(); return true })
   ipcMain.handle('panel:hide', () => { hidePanel(); return true })
+  ipcMain.handle('logs:open', () => { showLogs(); return true })
+  ipcMain.handle('logs:hide', () => { hideLogs(); return true })
   ipcMain.handle('notice:close', () => { closeNotice(); return true })
 
   ipcMain.on('float:move', (_e, x, y) => {
@@ -487,6 +536,12 @@ if (!gotLock) {
             await sleep(1200)
             console.log('[shot] after stop =', !!tracker.session, 'records =', store.records.length)
             fs.writeFileSync(`${base}-stop-panel.png`, (await panelWin.capturePage()).toPNG())
+          }
+          if (process.env.TT_LOGS) {
+            showLogs()
+            await sleep(1100)
+            fs.writeFileSync(`${base}-logs.png`, (await logsWin.capturePage()).toPNG())
+            hideLogs()
           }
           console.log('[shot] saved')
         } catch (err) {

@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('api', {
   stop: () => ipcRenderer.invoke('session:stop'),
   openPanel: () => ipcRenderer.invoke('panel:open'),
   hidePanel: () => ipcRenderer.invoke('panel:hide'),
+  openLogs: () => ipcRenderer.invoke('logs:open'),
   move: (x, y) => ipcRenderer.send('float:move', x, y),
   records: () => ipcRenderer.invoke('records:list'),
   setStatus: (id, status) => ipcRenderer.invoke('record:setStatus', id, status),

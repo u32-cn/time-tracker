@@ -8,7 +8,7 @@ const DEFAULT_SETTINGS = {
   autoLaunch: false,
   sound: true,
   theme: 'light',
-  fontScale: 1,
+  fontScale: 1.2,
   floatPos: null
 }
 
