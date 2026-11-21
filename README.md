@@ -75,7 +75,7 @@ Windows 桌面学习计时器。屏幕角落常驻一个胶囊浮窗，随时能
 
 ## 安装
 
-从 [Releases](https://github.com/u32/time-tracker/releases) 下载 `time-tracker-setup-x.y.z.exe`，双击安装。
+从 [Releases](https://github.com/u32-cn/time-tracker/releases) 下载 `time-tracker-setup-x.y.z.exe`，双击安装。
 
 安装包未签名，Windows SmartScreen 首次运行会提示"已保护你的电脑"，点「更多信息 → 仍要运行」即可。
 
