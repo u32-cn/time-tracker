@@ -35,6 +35,11 @@ function fmtShort(ms) {
   return m === 0 ? `${h}h` : `${h}h${m}m`
 }
 
+function fmtMinSec(ms) {
+  const total = Math.max(0, Math.round(ms / 1000))
+  return `${Math.floor(total / 60)}:${pad(total % 60)}`
+}
+
 function applySettings(s) {
   if (!s) return
   document.documentElement.dataset.theme = s.theme === 'dark' ? 'dark' : 'light'
@@ -62,6 +67,9 @@ function render(s) {
     if (s.idleMs >= 60000) {
       dot.className = 'dot warn'
       clock.classList.add('warn')
+      if (s.idleWarned) {
+        clock.textContent = fmtMinSec(s.remainingWarnMs)
+      }
     } else {
       dot.className = 'dot run'
     }

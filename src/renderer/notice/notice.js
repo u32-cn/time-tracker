@@ -80,6 +80,16 @@ function render(payload) {
     hint.textContent = snap && snap.restWaitMs > 0
       ? `还要休息 ${fmtMinSec(snap.restWaitMs)} 才能再次开始`
       : '最近 45 分钟内休息不足 5 分钟'
+  } else if (reason === 'idle-warning') {
+    const left = snap ? Math.max(0, snap.remainingWarnMs) : 0
+    $('title').textContent = '已经 3 分钟没有操作'
+    icon.innerHTML = ICON_CLOCK
+    icon.className = 'icon warn'
+    $('desc').textContent = '动了鼠标就继续计时，什么都不做则结束'
+    hint.hidden = false
+    hint.textContent = left > 0
+      ? `${fmtMinSec(left)} 后将自动结束本次学习`
+      : '1 分钟后没有操作将自动结束'
   } else {
     $('title').textContent = '无操作 3 分钟，已结束'
     icon.innerHTML = ICON_CLOCK

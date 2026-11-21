@@ -260,7 +260,7 @@ function hideLogs() {
 
 function createNotice(payload) {
   if (noticeWin && !noticeWin.isDestroyed()) noticeWin.destroy()
-  noticeAutoClose = payload.reason === 'idle'
+  noticeAutoClose = payload.reason === 'idle' || payload.reason === 'idle-warning'
   noticeWin = new BrowserWindow({
     width: NOTICE_W,
     height: NOTICE_H,
@@ -483,6 +483,10 @@ if (!gotLock) {
       if (noticeWin && noticeAutoClose && noticeShownAt && Date.now() - noticeShownAt > 900) {
         if (tracker.systemIdleMs < 800) closeNotice()
       }
+    })
+
+    tracker.on('idle-warning', (snap) => {
+      createNotice({ reason: 'idle-warning', snap, sound: false })
     })
 
     tracker.on('ended', ({ record, reason }) => {
