@@ -51,7 +51,9 @@ function fmtRest(ms) {
 function applySettings(s) {
   if (!s) return
   document.documentElement.dataset.theme = s.theme === 'dark' ? 'dark' : 'light'
-  const fs = Math.max(0.85, Math.min(1.2, Number(s.fontScale) || 1))
+  /* 必须与主进程 floatSize() 的钳制范围一致（0.8–1.6），
+   * 否则字号放大时窗口比内容高，透明死区会挡住下方鼠标 */
+  const fs = Math.max(0.8, Math.min(1.6, Number(s.fontScale) || 1))
   document.documentElement.style.setProperty('--fs', fs)
 }
 

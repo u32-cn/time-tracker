@@ -7,7 +7,9 @@ body {
 }
 
 body {
-  padding: 2px;
+  /* 40 = FLOAT_BASE_H：窗口高度 = 40 × fontScale，内容必须等比撑满，
+   * 否则下方留出透明死区挡鼠标 */
+  padding: calc(2px * var(--fs));
 }
 
 .capsule {
@@ -15,7 +17,7 @@ body {
   align-items: center;
   gap: 8px;
   width: 100%;
-  height: 36px;
+  height: calc(36px * var(--fs));
   padding: 0 11px;
   background: var(--bg-softer);
   border: 1px solid var(--line);
