@@ -153,7 +153,7 @@ window.addEventListener('mouseup', () => {
 
 capsule.addEventListener('contextmenu', (e) => {
   e.preventDefault()
-  window.api.openPanel()
+  window.api.showMenu(e.clientX, e.clientY)
 })
 
 stopBtn.addEventListener('mousedown', (e) => e.stopPropagation())

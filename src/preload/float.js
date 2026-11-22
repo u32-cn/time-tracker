@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('api', {
   openPanel: () => ipcRenderer.invoke('panel:open'),
   hidePanel: () => ipcRenderer.invoke('panel:hide'),
   move: (x, y) => ipcRenderer.send('float:move', x, y),
+  showMenu: (x, y) => ipcRenderer.send('float:menu', x, y),
   records: () => ipcRenderer.invoke('records:list'),
   setStatus: (id, status) => ipcRenderer.invoke('record:setStatus', id, status),
   removeRecord: (id) => ipcRenderer.invoke('record:remove', id),

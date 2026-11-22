@@ -382,6 +382,20 @@ function registerIpc() {
   ipcMain.handle('logs:hide', () => { hideLogs(); return true })
   ipcMain.handle('notice:close', () => { closeNotice(); return true })
 
+  ipcMain.on('float:menu', (_e, x, y) => {
+    if (!floatWin || floatWin.isDestroyed()) return
+    const running = tracker && tracker.session
+    Menu.buildFromTemplate([
+      { label: '显示面板', click: () => showPanel() },
+      { label: running ? '停止本次' : '开始学习', click: () => {
+        if (running) tracker.stop('manual')
+        else showPanel()
+      } },
+      { type: 'separator' },
+      { label: '退出', click: () => { quitting = true; app.quit() } }
+    ]).popup({ window: floatWin, x: Math.round(x), y: Math.round(y) })
+  })
+
   ipcMain.on('float:move', (_e, x, y) => {
     if (!floatWin || floatWin.isDestroyed()) return
     /* 不能只用 setPosition：Windows 上透明无边框窗口反复 setPosition 会被
