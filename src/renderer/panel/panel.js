@@ -33,7 +33,11 @@ const el = {
   themeSeg: $('themeSeg'),
   fsRange: $('fsRange'),
   fsValue: $('fsValue'),
-  closeBtn: $('closeBtn')
+  closeBtn: $('closeBtn'),
+  exceedSheet: $('exceedSheet'),
+  exceedMax: $('exceedMax'),
+  exceedOk: $('exceedOk'),
+  exceedCancel: $('exceedCancel')
 }
 
 let state = null
@@ -278,6 +282,26 @@ async function loadRecords() {
 }
 
 /* ---------- 交互 ---------- */
+/* ---------- 超额确认弹窗 ---------- */
+function hideExceed() {
+  el.exceedSheet.hidden = true
+}
+
+el.exceedCancel.addEventListener('click', hideExceed)
+el.exceedSheet.addEventListener('click', (e) => {
+  if (e.target === el.exceedSheet) hideExceed()
+})
+
+el.exceedOk.addEventListener('click', async () => {
+  hideExceed()
+  const maxMin = Math.max(1, Math.floor(state.maxStudyMs / 60000))
+  const res = await window.api.start(maxMin)
+  if (!res.ok) {
+    el.mainBtn.textContent = '还需休息'
+    el.mainBtn.disabled = true
+  }
+})
+
 el.mainBtn.addEventListener('click', async () => {
   if (!state) return
   if (state.running) {
@@ -287,6 +311,12 @@ el.mainBtn.addEventListener('click', async () => {
   const min = parseInt(el.minutesInput.value, 10)
   if (!min || min < 1 || min > 40) {
     el.manualMsg.textContent = '时长需在 1 - 40 分钟之间'
+    return
+  }
+  /* 目标超过本次实际可用额度：弹窗确认，按实际时长开始 */
+  if (state.canStart && min * 60000 > state.maxStudyMs) {
+    el.exceedMax.textContent = String(Math.max(1, Math.floor(state.maxStudyMs / 60000)))
+    el.exceedSheet.hidden = false
     return
   }
   const res = await window.api.start(min)
@@ -387,7 +417,8 @@ el.closeBtn.addEventListener('click', () => window.api.hidePanel())
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    if (!el.settingsSheet.hidden) el.settingsSheet.hidden = true
+    if (!el.exceedSheet.hidden) hideExceed()
+    else if (!el.settingsSheet.hidden) el.settingsSheet.hidden = true
     else if (!el.manualForm.hidden) el.manualForm.hidden = true
     else window.api.hidePanel()
   }

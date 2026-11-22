@@ -100,25 +100,25 @@ test('预警后恢复操作：不结束、继续计时', () => {
   assert.strictEqual(recs[0].seconds, 600)
 })
 
-/* 3. 45 分钟滑动窗口：学 30 分 + 歇 2 分 + 再学 10 分即被拦下 */
-test('45 分钟窗口内休息不足 5 分钟：自动结束', () => {
+/* 3. 45 分钟滑动窗口：窗口内已学 30 分钟、歇 2 分钟后，超额目标被拒，按余量开始 */
+test('45 分钟窗口余量不足：超额目标被拒，余量内可开始', () => {
   const env = makeEnv()
   assert.strictEqual(env.tracker.begin(40).ok, true)
   env.run(1, 1800, true)
   env.tracker.stop('manual')
   env.setNow(T0 + 1920 * 1000)
-  const second = env.tracker.begin(40)
-  assert.strictEqual(second.ok, true, '歇了 2 分钟应该还能开始')
-
-  for (let sec = 1921; sec <= 2700; sec++) {
-    env.setNow(T0 + sec * 1000)
-    env.setInput()
-    env.tracker.tick()
-  }
+  // 窗口内已学 30 分钟，余量 = 40 - 30 = 10 分钟
+  const over = env.tracker.begin(40)
+  assert.strictEqual(over.ok, false, '歇了 2 分钟但目标超额，应拒绝')
+  assert.strictEqual(over.error, 'exceed')
+  assert.strictEqual(over.maxStudyMs, 600 * 1000)
+  // 按余量开始，学满 10 分钟目标正常结束
+  assert.strictEqual(env.tracker.begin(10).ok, true)
+  env.run(1921, 2530, true)
   const recs = env.store.records
   assert.strictEqual(recs.length, 2)
-  assert.strictEqual(recs[1].endReason, 'rest')
-  assert.ok(recs[1].seconds >= 600 && recs[1].seconds <= 640, `第二段应约 10 分钟，实际 ${recs[1].seconds}`)
+  assert.strictEqual(recs[1].endReason, 'target')
+  assert.strictEqual(recs[1].seconds, 600)
 })
 
 /* 4. 启动前预检：窗口内学满 40 分钟后必须先休息 */
@@ -141,6 +141,30 @@ test('学满 40 分钟后禁止直接开始', () => {
   assert.strictEqual(res.ok, false)
   assert.strictEqual(res.error, 'rest')
   assert.ok(res.waitMs > 0, '应给出还需休息的时长')
+})
+
+/* 4b. 目标超过窗口余量：拒绝并返回实际额度 */
+test('目标超过窗口余量：拒绝并给出 maxStudyMs', () => {
+  const env = makeEnv()
+  env.store.addRecord({
+    id: 'x4',
+    startTs: T0 - 1200 * 1000,
+    endTs: T0,
+    dayStartTs: new Date(T0).setHours(0, 0, 0, 0),
+    seconds: 1200,
+    segments: [[T0 - 1200 * 1000, T0]],
+    targetSec: 1200,
+    source: 'timer',
+    status: 'active',
+    endReason: 'manual'
+  })
+  // 窗口内已学 20 分钟，余量 = 40 - 20 = 20 分钟
+  const res = env.tracker.begin(30)
+  assert.strictEqual(res.ok, false)
+  assert.strictEqual(res.error, 'exceed')
+  assert.strictEqual(res.maxStudyMs, 20 * 60 * 1000)
+  // 额度内的目标照常放行
+  assert.strictEqual(env.tracker.begin(20).ok, true)
 })
 
 /* 5. 断电/强杀后重启：只认最后落盘，不多记 */

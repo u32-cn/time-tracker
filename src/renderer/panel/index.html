@@ -141,6 +141,21 @@
     </div>
   </div>
 
+  <div class="sheet" id="exceedSheet" data-u32-name="exceed-sheet" hidden>
+    <div class="sheet-card" data-u32-name="exceed-card">
+      <div class="sheet-head" data-u32-name="exceed-head">
+        <span class="sheet-title" data-u32-name="exceed-title">时长受休息规则限制</span>
+      </div>
+      <div class="exceed-body" data-u32-name="exceed-body">
+        受「每 45 分钟须休息 5 分钟」限制，本次最多可学 <strong class="num" id="exceedMax" data-u32-name="exceed-max">0</strong> 分钟，将按该时长开始。
+      </div>
+      <div class="exceed-actions" data-u32-name="exceed-actions">
+        <button class="btn-ghost small" id="exceedCancel" data-u32-name="exceed-cancel">取消</button>
+        <button class="btn-primary small" id="exceedOk" data-u32-name="exceed-ok">按实际时长开始</button>
+      </div>
+    </div>
+  </div>
+
   <script src="./panel.js"></script>
 </body>
 </html>

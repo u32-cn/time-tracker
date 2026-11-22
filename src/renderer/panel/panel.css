@@ -642,3 +642,23 @@ input[type='range']::-webkit-slider-thumb {
   line-height: 1.75;
   color: var(--text-3);
 }
+
+/* ---------- 超额确认弹窗 ---------- */
+.exceed-body {
+  margin-top: 14px;
+  font-size: calc(13px * var(--fs));
+  line-height: 1.8;
+  color: var(--text-2);
+}
+
+.exceed-body strong {
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.exceed-actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

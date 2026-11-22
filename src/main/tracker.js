@@ -138,6 +138,10 @@ class Tracker extends EventEmitter {
     }
     const pre = this.canStart()
     if (!pre.ok) return pre
+    /* 45 分钟窗口约束：目标不能超过本次实际可用额度，超额拒绝并返回额度 */
+    if (targetSec * 1000 > pre.maxStudyMs) {
+      return { ok: false, error: 'exceed', maxStudyMs: pre.maxStudyMs }
+    }
 
     const now = this.now()
     this.session = {
