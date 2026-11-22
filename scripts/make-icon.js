@@ -1,9 +1,12 @@
 'use strict'
 
-/* 生成应用图标：蓝色圆角方块 + 白色表盘与指针，输出 build/icon.ico 与 build/icon.png */
+/* 生成应用图标：白底红前景闹钟，输出 build/icon.ico 与 build/icon.png
+ * 纯逐像素 SDF 绘制，无外部依赖，`npm run icon` 可复现 */
+
 const fs = require('node:fs')
 const path = require('node:path')
 const zlib = require('node:zlib')
+const { drawRGBA } = require('../src/shared/icon-glyph')
 
 const CRC_TABLE = (() => {
   const t = new Int32Array(256)
@@ -47,89 +50,72 @@ function encodePNG(w, h, rgba) {
   ])
 }
 
-/** 圆角方块的覆盖率，用于抗锯齿 */
-function roundRectAlpha(x, y, size, radius) {
-  const inset = size * 0.04
-  const left = inset
-  const right = size - inset
-  const cx = Math.min(Math.max(x, left + radius), right - radius)
-  const cy = Math.min(Math.max(y, left + radius), right - radius)
-  const dist = Math.hypot(x - cx, y - cy)
-  return Math.max(0, Math.min(1, radius + 0.8 - dist))
-}
+/* 几何全部来自 src/shared/icon-glyph.js（与主进程托盘图标同一份实现），
+ * 这里只负责把它编码成 PNG / 多尺寸 ICO */
 
-function draw(size) {
-  const px = Buffer.alloc(size * size * 4)
-  const cx = size / 2
-  const cy = size / 2
-  const radius = size * 0.235
-  const ringOuter = size * 0.285
-  const ringInner = size * 0.215
-
+/* 32 位 BGRA + AND 掩码的 DIB 条目：Windows 对小尺寸图标的传统格式，
+ * 比「只放一张 256 PNG 让系统自己缩」清晰得多 */
+function dib(size, rgba) {
+  const maskStride = Math.ceil(size / 32) * 4
+  const xor = Buffer.alloc(size * size * 4)
   for (let y = 0; y < size; y++) {
+    const srcRow = size - 1 - y
     for (let x = 0; x < size; x++) {
-      const i = (y * size + x) * 4
-      const fx = x + 0.5
-      const fy = y + 0.5
-      const shapeA = roundRectAlpha(fx, fy, size, radius)
-      if (shapeA <= 0) {
-        px[i + 3] = 0
-        continue
-      }
-      let r = 0x37
-      let g = 0x8a
-      let b = 0xdd
-
-      const d = Math.hypot(fx - cx, fy - cy)
-      if (d < ringOuter && d > ringInner) {
-        r = 0xff
-        g = 0xff
-        b = 0xff
-      }
-      // 时针：指向 12 点方向
-      if (Math.abs(fx - cx) < size * 0.032 && fy < cy && fy > cy - ringOuter * 0.62) {
-        r = 0xff
-        g = 0xff
-        b = 0xff
-      }
-      // 分针：指向 4 点方向
-      const ang = Math.atan2(fy - cy, fx - cx)
-      const target = (Math.PI / 180) * 28
-      if (Math.abs(ang - target) < 0.075 && d < ringOuter * 0.72 && d > size * 0.02) {
-        r = 0xff
-        g = 0xff
-        b = 0xff
-      }
-
-      px[i] = r
-      px[i + 1] = g
-      px[i + 2] = b
-      px[i + 3] = Math.round(255 * shapeA)
+      const s = (srcRow * size + x) * 4
+      const d = (y * size + x) * 4
+      xor[d] = rgba[s + 2]
+      xor[d + 1] = rgba[s + 1]
+      xor[d + 2] = rgba[s]
+      xor[d + 3] = rgba[s + 3]
     }
   }
-  return encodePNG(size, size, px)
+  const mask = Buffer.alloc(maskStride * size)
+  const hdr = Buffer.alloc(40)
+  hdr.writeUInt32LE(40, 0)
+  hdr.writeInt32LE(size, 4)
+  hdr.writeInt32LE(size * 2, 8)
+  hdr.writeUInt16LE(1, 12)
+  hdr.writeUInt16LE(32, 14)
+  hdr.writeUInt32LE(xor.length, 20)
+  return Buffer.concat([hdr, xor, mask])
 }
 
-function ico(png, size) {
+/* 多尺寸 ICO：每个尺寸都按目标像素直接绘制，不靠缩放 */
+const ICO_SIZES = [16, 20, 24, 32, 40, 48, 64, 128, 256]
+
+function encodeICO(entries) {
   const header = Buffer.alloc(6)
   header.writeUInt16LE(0, 0)
   header.writeUInt16LE(1, 2)
-  header.writeUInt16LE(1, 4)
-  const entry = Buffer.alloc(16)
-  entry[0] = size >= 256 ? 0 : size
-  entry[1] = size >= 256 ? 0 : size
-  entry.writeUInt16LE(1, 4)
-  entry.writeUInt16LE(32, 6)
-  entry.writeUInt32LE(png.length, 8)
-  entry.writeUInt32LE(22, 12)
-  return Buffer.concat([header, entry, png])
+  header.writeUInt16LE(entries.length, 4)
+  let offset = 6 + entries.length * 16
+  const dir = []
+  for (const { size, data } of entries) {
+    const e = Buffer.alloc(16)
+    e[0] = size >= 256 ? 0 : size
+    e[1] = size >= 256 ? 0 : size
+    e.writeUInt16LE(1, 4)
+    e.writeUInt16LE(32, 6)
+    e.writeUInt32LE(data.length, 8)
+    e.writeUInt32LE(offset, 12)
+    dir.push(e)
+    offset += data.length
+  }
+  return Buffer.concat([header, ...dir, ...entries.map((e) => e.data)])
 }
 
 const outDir = path.join(__dirname, '..', 'build')
 fs.mkdirSync(outDir, { recursive: true })
 
-const big = draw(256)
-fs.writeFileSync(path.join(outDir, 'icon.png'), big)
-fs.writeFileSync(path.join(outDir, 'icon.ico'), ico(big, 256))
-fs.writeFileSync(path.join(outDir, 'tray.png'), draw(32))
-console.log('图标已生成：build/icon.ico, build/icon.png, build/tray.png')
+const big = drawRGBA(256)
+fs.writeFileSync(path.join(outDir, 'icon.png'), encodePNG(256, 256, big))
+
+const entries = ICO_SIZES.map((size) => ({
+  size,
+  /* 256 用 PNG（体积小、Vista+ 通用），其余用 DIB 以匹配 Windows 小尺寸渲染路径 */
+  data: size >= 256 ? encodePNG(256, 256, big) : dib(size, drawRGBA(size))
+}))
+fs.writeFileSync(path.join(outDir, 'icon.ico'), encodeICO(entries))
+
+/* 只产出 icon.ico / icon.png 两件：
+ * 托盘图标直接读 icon.ico（由系统按 DPI 挑尺寸），不再单独生成 tray.png */

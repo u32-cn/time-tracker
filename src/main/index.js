@@ -2,9 +2,11 @@
 
 const { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage } = require('electron')
 const path = require('node:path')
+const fs = require('node:fs')
 const zlib = require('node:zlib')
 const { Store } = require('./store')
 const { Tracker } = require('./tracker')
+const { drawRGBA } = require('../shared/icon-glyph')
 
 const FLOAT_BASE_W = 224
 const FLOAT_BASE_H = 40
@@ -88,29 +90,10 @@ function encodePNG(w, h, rgba) {
   ])
 }
 
-/** 蓝色圆盘 + 白色缺口，做成一个朴素的计时盘图标 */
-function makeIcon(size) {
-  const px = Buffer.alloc(size * size * 4)
-  const cx = size / 2
-  const cy = size / 2
-  const r = size * 0.45
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const i = (y * size + x) * 4
-      const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy)
-      const t = Math.max(0, Math.min(1, r + 1 - d))
-      px[i] = 0x37
-      px[i + 1] = 0x8a
-      px[i + 2] = 0xdd
-      px[i + 3] = Math.round(255 * t)
-      if (d < r * 0.62 && d > r * 0.42) {
-        px[i] = 0xff
-        px[i + 1] = 0xff
-        px[i + 2] = 0xff
-      }
-    }
-  }
-  return nativeImage.createFromBuffer(encodePNG(size, size, px))
+/** 托盘图标：与 build/icon.ico 同一份几何（src/shared/icon-glyph.js），
+ *  每个 DPI 档位都按目标物理像素直接绘制，交给系统缩放就会糊 */
+function makeTrayPng(size) {
+  return encodePNG(size, size, drawRGBA(size))
 }
 
 /* ---------- 窗口 ---------- */
@@ -305,7 +288,18 @@ function closeNotice() {
 
 /* ---------- 托盘 ---------- */
 function buildTray() {
-  const icon = makeIcon(32).resize({ width: 16, height: 16 })
+  /* 必须用 .ico 文件路径，不能传内存里的图：Electron 的 NativeImage::GetHICON
+   * 在「图片转 HICON」分支里只用 1x 位图、忽略请求尺寸，托盘就会被系统拉伸发糊；
+   * 传 .ico 路径时走 ReadICOFromPath → LoadImage，由系统按当前 DPI 从多尺寸里挑 */
+  const icoPath = path.join(__dirname, '..', '..', 'build', 'icon.ico')
+  let icon = nativeImage.createEmpty()
+  if (fs.existsSync(icoPath)) icon = nativeImage.createFromPath(icoPath)
+  if (icon.isEmpty()) {
+    icon = nativeImage.createFromBuffer(makeTrayPng(16))
+    log('tray icon: fallback png (ico missing)', icoPath)
+  } else {
+    log('tray icon: ico', icoPath)
+  }
   tray = new Tray(icon)
   tray.setToolTip('每日学习计时器')
   refreshTray()
@@ -389,7 +383,11 @@ function registerIpc() {
   ipcMain.handle('notice:close', () => { closeNotice(); return true })
 
   ipcMain.on('float:move', (_e, x, y) => {
-    if (floatWin && !floatWin.isDestroyed()) floatWin.setPosition(Math.round(x), Math.round(y))
+    if (!floatWin || floatWin.isDestroyed()) return
+    /* 不能只用 setPosition：Windows 上透明无边框窗口反复 setPosition 会被
+     * 非客户区重算悄悄撑大尺寸（表现为越拖越长），必须用 setBounds 锁死尺寸 */
+    const size = floatSize(store.settings.fontScale)
+    floatWin.setBounds({ x: Math.round(x), y: Math.round(y), width: size.width, height: size.height })
   })
 
   ipcMain.handle('records:list', () => store.records.slice().sort((a, b) => b.endTs - a.endTs))
