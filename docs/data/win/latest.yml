@@ -1,0 +1,6 @@
+version: 0.3.4
+path: download/win/time-tracker-setup-0.3.4.exe
+files:
+  - url: time-tracker-setup-0.3.4.exe
+    size: 81802494
+    sha256: 73879bd14227d1ca7d403c96f08aecac7b5401915a86ca9b8f5d6fcee9206720
