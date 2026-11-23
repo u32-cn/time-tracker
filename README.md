@@ -4,6 +4,8 @@ Windows 桌面学习计时器。屏幕角落常驻一个胶囊浮窗，随时能
 
 ![亮色主题](docs/screenshots/panel-light.png)
 
+[产品主页](https://u32-cn.github.io/time-tracker/) · [下载最新版](https://github.com/u32-cn/time-tracker/releases)
+
 网页版（`kid.u32.cn/time-tracker`）的短板是检测不到系统级状态——锁屏了、电脑睡了、人走了，它照样在倒计时。桌面版把这三件事补上，并坚持一条原则：**宁可少记，不多记。**
 
 ## 适用场景
@@ -129,12 +131,12 @@ Windows 桌面学习计时器。屏幕角落常驻一个胶囊浮窗，随时能
 ```bash
 npm install
 npm start          # 启动（走 scripts/dev.js）
-npm test           # 计时内核单元测试，7 个用例
+npm test           # 计时内核单元测试，9 个用例
 npm run icon       # 重新生成 build/icon.ico
 npm run dist       # 打包 NSIS 安装包 → dist/
 ```
 
-`npm test` 覆盖：目标到点、2 分 30 秒预警与 3 分钟截断、预警后恢复操作、45 分钟窗口拦截、启动前预检、崩溃恢复不多记、跨零点归属。
+`npm test` 覆盖 9 个用例：目标到点、2 分 30 秒预警与 3 分钟截断、预警后恢复操作、45 分钟窗口拦截、启动前预检、超额目标拒绝并返回额度、崩溃恢复不多记、跨零点归属、补记与已有记录时间重叠拒绝。
 
 本机若注入了 `NODE_OPTIONS` 或 `ELECTRON_RUN_AS_NODE`，打包需要绕开：
 
