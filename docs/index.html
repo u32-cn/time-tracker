@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>每日学习计时器 — Windows 桌面学习计时器</title>
+<meta name="description" content="屏幕角落常驻胶囊浮窗的 Windows 学习计时器。锁屏、睡眠、3 分钟无操作都会自动结束，宁可少记，不多记。">
+<style>
+  /* 设计变量直接继承 src/renderer/shared/tokens.css —— 主页与产品同一套色板 */
+  :root{
+    --bg:#fdfaf4; --bg-soft:#f7f1e4; --card:#fff8ea; --card-2:#fffcf6;
+    --line:#eae1d1; --line-soft:#f0e9db;
+    --ink:#2e2620; --ink-2:#6f6353; --ink-3:#a2947f; --ink-4:#c4b49b;
+    --accent:#c4703c; --accent-dark:#9a5528; --accent-track:#f0e4cc;
+    --warn:#d08a2e; --success:#4f7a3a;
+    --fill:#f3ebdb;
+    --sans:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+    --mono:ui-monospace,"Cascadia Mono",Consolas,"Courier New",monospace;
+    --shadow:0 1px 2px rgba(74,58,36,.05), 0 12px 32px -12px rgba(74,58,36,.16);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#16130f; --bg-soft:#221d17; --card:#241e18; --card-2:#1c1813;
+      --line:#3a322a; --line-soft:#2c2620;
+      --ink:#f2eadf; --ink-2:#b5a793; --ink-3:#8a7c69; --ink-4:#63574a;
+      --accent:#d98653; --accent-dark:#e8a578; --accent-track:#3a2d22;
+      --warn:#d9a24e; --success:#8fbf72;
+      --fill:#3e352c;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 16px 40px -16px rgba(0,0,0,.55);
+    }
+  }
+
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:15.5px;line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent-dark);text-decoration:none;border-bottom:1px solid var(--accent-track)}
+  a:hover{border-bottom-color:var(--accent)}
+  img{max-width:100%;height:auto;display:block}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .num{font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+  .wrap{max-width:1060px;margin:0 auto;padding:0 32px}
+
+  /* ---------- header ---------- */
+  header.top{
+    border-bottom:.5px solid var(--line);
+    background:var(--bg);
+  }
+  .top-in{
+    max-width:1060px;margin:0 auto;padding:16px 32px;
+    display:flex;align-items:center;gap:14px;
+  }
+  .mark{
+    width:26px;height:26px;border-radius:8px;background:var(--accent);
+    display:grid;place-items:center;flex:0 0 auto;
+    box-shadow:inset 0 -1px 0 rgba(0,0,0,.12);
+  }
+  .mark::after{
+    content:"";width:7px;height:7px;border-radius:50%;
+    background:var(--bg);opacity:.95;
+  }
+  .brand{font-weight:600;letter-spacing:-.01em}
+  .ver{
+    font-family:var(--mono);font-size:11.5px;color:var(--ink-3);
+    border:.5px solid var(--line);border-radius:999px;padding:1px 8px;
+  }
+  .top-nav{margin-left:auto;display:flex;gap:20px;font-size:13.5px}
+  .top-nav a{color:var(--ink-2);border:0}
+  .top-nav a:hover{color:var(--accent)}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;overflow:hidden}
+  .hero::before{
+    content:"";position:absolute;inset:0 0 auto 0;height:2px;
+    background:linear-gradient(90deg,var(--accent) 0 26%,var(--line) 26% 100%);
+  }
+  .hero-in{
+    display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;
+    padding:72px 0 60px;
+  }
+  .kicker{
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-3);margin:0 0 18px;
+  }
+  h1{
+    font-size:clamp(34px,4.4vw,46px);line-height:1.16;letter-spacing:-.025em;
+    font-weight:600;margin:0 0 18px;
+  }
+  h1 em{font-style:normal;color:var(--accent)}
+  .lead{margin:0;color:var(--ink-2);font-size:16.5px;line-height:1.72;max-width:400px}
+  .actions{display:flex;flex-wrap:wrap;gap:12px;margin:28px 0 0}
+  .facts{display:flex;gap:28px;margin:34px 0 0;padding-top:22px;border-top:.5px solid var(--line)}
+  .facts div{display:flex;flex-direction:column;gap:2px}
+  .facts b{font-size:19px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .facts b i{font-style:normal;font-size:12px;font-weight:400;color:var(--ink-3);margin-left:2px}
+  .facts span{font-size:12px;color:var(--ink-3);letter-spacing:.02em}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:11px 20px;border-radius:10px;font-size:14.5px;font-weight:500;
+    background:var(--accent);color:#fff;border:0;
+    box-shadow:0 1px 2px rgba(74,58,36,.18),0 8px 20px -10px rgba(196,112,60,.7);
+    transition:background .15s;
+  }
+  .btn:hover{background:var(--accent-dark)}
+  .btn.ghost{
+    background:transparent;color:var(--ink);
+    border:.5px solid var(--line);box-shadow:none;
+  }
+  .btn.ghost:hover{border-color:var(--ink-3);background:var(--card)}
+
+  .shot{
+    border:.5px solid var(--line);border-radius:14px;
+    background:var(--card);box-shadow:var(--shadow);
+  }
+  .shot > img,.shot picture > img{border-radius:0 0 13px 13px;display:block;width:100%;height:auto}
+  .shot-bar{
+    display:flex;align-items:center;gap:6px;padding:9px 12px;
+    border-bottom:.5px solid var(--line-soft);background:var(--card-2);
+  }
+  .shot-bar i{width:8px;height:8px;border-radius:50%;background:var(--line);display:block}
+  .shot-bar span{
+    margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--ink-4);
+    letter-spacing:.06em;
+  }
+
+  /* ---------- float strip ---------- */
+  .strip{padding:0 0 56px}
+  .desk{
+    border:.5px solid var(--line);border-radius:14px;background:var(--bg-soft);
+    padding:24px 28px;display:flex;gap:32px;align-items:center;
+  }
+  .desk .shot-wrap{flex:0 0 auto;width:300px;max-width:38%}
+  .desk .info{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .desk img{width:100%;box-shadow:0 2px 10px -2px rgba(74,58,36,.18);border-radius:8px}
+  .desk.float img{border-radius:999px;box-shadow:0 3px 12px -3px rgba(74,58,36,.22)}
+  .legend{display:flex;flex-wrap:wrap;gap:16px;font-size:12.5px;color:var(--ink-2)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend .d{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
+  .legend .d.on{background:var(--accent)}
+  .legend .d.soon{background:var(--warn)}
+  .legend .d.off{background:var(--ink-4)}
+  .desk-note{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.7;max-width:560px}
+  .desk .cap{
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink-3);
+  }
+
+  /* ---------- sections ---------- */
+  section{padding:56px 0;border-top:.5px solid var(--line)}
+  .sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:10px}
+  .sec-no{
+    font-family:var(--mono);font-size:11.5px;color:var(--accent);
+    letter-spacing:.12em;flex:0 0 auto;padding-top:2px;
+  }
+  h2{font-size:24px;font-weight:600;letter-spacing:-.015em;margin:0}
+  .sec-sub{color:var(--ink-2);margin:0 0 32px;max-width:680px}
+
+  /* three-up reasons */
+  .tri{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .cell{
+    border:.5px solid var(--line);border-radius:var(--radius,12px);
+    background:var(--card);padding:22px 20px;
+  }
+  .cell h3{
+    margin:0 0 8px;font-size:15px;font-weight:600;letter-spacing:-.01em;
+    display:flex;align-items:center;gap:8px;
+  }
+  .cell h3::before{
+    content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);
+    flex:0 0 auto;
+  }
+  .cell p{margin:0;color:var(--ink-2);font-size:14px;line-height:1.68}
+
+  /* rule quote */
+  .rule{border-left:3px solid var(--accent);
+    background:var(--card);padding:22px 26px;border-radius:0 12px 12px 0;
+  }
+  .rule p{margin:0;font-size:19px;line-height:1.6;letter-spacing:-.01em;max-width:880px}
+  .rule p strong{color:var(--accent-dark);font-weight:600}
+  .rule .note{margin-top:12px;font-size:14px;color:var(--ink-2);line-height:1.75;max-width:820px}
+
+  /* table */
+  .tbl-wrap{margin:28px 0 0;border:.5px solid var(--line);border-radius:12px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  thead th{
+    background:var(--card-2);text-align:left;font-weight:600;font-size:12px;
+    letter-spacing:.06em;color:var(--ink-3);font-family:var(--mono);
+    padding:11px 16px;border-bottom:.5px solid var(--line);white-space:nowrap;
+  }
+  tbody td{padding:13px 16px;border-bottom:.5px solid var(--line-soft);vertical-align:top;line-height:1.6}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr:hover{background:var(--card)}
+  td.k{font-weight:500;white-space:nowrap}
+  td.k .tag{
+    font-family:var(--mono);font-size:10px;letter-spacing:.06em;
+    padding:1px 6px;border-radius:4px;margin-left:8px;vertical-align:1px;
+  }
+  .tag.hard{background:var(--accent-track);color:var(--accent-dark)}
+  .tag.soft{background:var(--fill);color:var(--ink-3)}
+
+  /* code */
+  pre{
+    margin:24px 0 0;background:var(--card);border:.5px solid var(--line);
+    border-radius:12px;padding:18px 22px;overflow-x:auto;
+    font-family:var(--mono);font-size:13px;line-height:1.85;color:var(--ink-2);
+  }
+  pre b{color:var(--accent-dark);font-weight:600}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:28px 0 0}
+  .twocol .cell h3::before{background:var(--warn)}
+  .twocol .cell h3::before{content:""}
+
+  /* gallery */
+  .gal{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  .gal .shot img{border-bottom:0;display:block}
+  .gal .cell{align-self:stretch;display:flex;flex-direction:column;justify-content:flex-start;padding-top:26px}
+  .cap2{
+    font-size:13px;color:var(--ink-3);padding:10px 14px;
+    border-top:.5px solid var(--line-soft);background:var(--card-2);
+    font-family:var(--mono);letter-spacing:.04em;
+  }
+  .notice{display:flex;align-items:center;justify-content:center;background:var(--bg-soft);padding:18px}
+  .notice img{max-width:320px;filter:drop-shadow(0 10px 24px rgba(74,58,36,.18))}
+
+  /* spec grid */
+  .spec{
+    display:grid;grid-template-columns:repeat(2,1fr);gap:0 40px;
+  }
+  .spec dl{margin:0;padding:14px 0;border-bottom:.5px solid var(--line-soft);
+    display:grid;grid-template-columns:96px 1fr;gap:16px}
+  .spec dt{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);
+    letter-spacing:.06em;text-transform:uppercase;padding-top:3px}
+  .spec dd{margin:0;font-size:14.5px}
+
+  /* footer */
+  footer{border-top:.5px solid var(--line);background:var(--bg-soft);padding:40px 0 56px}
+  .foot-in{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;justify-content:space-between}
+  .foot-in p{margin:0;color:var(--ink-3);font-size:13.5px;line-height:1.8}
+  .foot-links{display:flex;gap:22px;font-size:13.5px}
+  .foot-links a{border:0;color:var(--ink-2)}
+  .foot-links a:hover{color:var(--accent)}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+  @media (max-width:900px){
+    .hero-in{grid-template-columns:1fr;gap:36px;padding:52px 0 40px}
+    .desk{flex-direction:column;align-items:flex-start;gap:16px;padding:20px}
+    .desk .shot-wrap{width:100%;max-width:100%}
+    .tri{grid-template-columns:1fr}
+    .gal{grid-template-columns:1fr}
+    .spec{grid-template-columns:1fr}
+  }
+  @media (max-width:640px){
+    .wrap{padding:0 20px}
+    .top-in{padding:14px 20px}
+    .top-nav{display:none}
+    .lead{font-size:15.5px}
+    
+    .sec-sub{margin-bottom:26px}
+    .hero-in{padding:40px 0 34px}
+    section{padding:44px 0}
+    .tbl-wrap{border:0;overflow:visible}
+    table{min-width:0;width:100%}
+    thead{display:none}
+    tbody tr{display:block;border:.5px solid var(--line);border-radius:10px;
+      background:var(--card);margin-bottom:10px;padding:8px 0}
+    tbody tr:hover{background:var(--card)}
+    tbody td{display:flex;gap:12px;align-items:baseline;
+      border:0;padding:5px 14px;font-size:13.5px;line-height:1.65}
+    tbody td::before{content:attr(data-label);flex:0 0 60px;font-family:var(--mono);
+      font-size:10.5px;color:var(--ink-3);letter-spacing:.06em}
+    td.k{font-weight:600}
+    td.k .tag{margin-left:6px}
+    pre{font-size:12.5px}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <div class="mark" aria-hidden="true"></div>
+    <span class="brand">每日学习计时器</span>
+    <span class="ver">v0.3.4</span>
+    <nav class="top-nav">
+      <a href="https://github.com/u32-cn/time-tracker">GitHub</a>
+      <a href="https://github.com/u32-cn/time-tracker/releases">Releases</a>
+      <a href="#rules">计时规则</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <div class="hero-in">
+      <div>
+        <p class="kicker">Windows · Electron · MIT</p>
+        <h1>屏幕角落<br>一颗<em>诚实的</em>秒表</h1>
+        <p class="lead">常驻胶囊浮窗，随时看到今天学了多久、现在是否在计时。点开是完整面板：今日时间轴、最近 7 天走势、全部学习记录。</p>
+        <div class="actions">
+          <a class="btn" href="https://github.com/u32-cn/time-tracker/releases">下载安装包</a>
+          <a class="btn ghost" href="https://github.com/u32-cn/time-tracker">查看源码</a>
+        </div>
+        <div class="facts">
+          <div><b>3<i>分钟</i></b><span>无操作自动结束</span></div>
+          <div><b>45<i>分钟</i></b><span>滑动休息窗口</span></div>
+          <div><b>9/9</b><span>内核用例通过</span></div>
+        </div>
+      </div>
+      <div class="shot">
+        <div class="shot-bar">
+          <i></i><i></i><i></i>
+          <span>PANEL / LIGHT</span>
+        </div>
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="screenshots/panel-dark.png">
+          <img src="screenshots/panel-light.png" width="960" height="960" alt="主面板：今日已学 2 小时 27 分，45 分钟休息条已达标，今日时间轴与最近 7 天柱状图">
+        </picture>
+      </div>
+    </div>
+
+    <div class="strip">
+      <div class="desk">
+        <div class="shot-wrap">
+          <picture>
+            <source media="(prefers-color-scheme: dark)" srcset="screenshots/float-dark.png">
+            <img src="screenshots/float-light.png" width="408" height="72" alt="浮窗：未开始 · 2h27m，右侧停止按钮">
+          </picture>
+        </div>
+        <div class="info">
+          <span class="cap">FLOAT · 常驻胶囊</span>
+          <div class="legend">
+            <span><i class="d on"></i>计时中</span>
+            <span><i class="d soon"></i>快到 3 分钟</span>
+            <span><i class="d off"></i>未开始</span>
+          </div>
+          <p class="desk-note">显示倒计时与今日累计。可拖动，单击展开主面板，右键同样展开；右侧小方块直接停止。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section>
+    <div class="sec-head"><span class="sec-no">01</span><h2>网页版测不到的三件事</h2></div>
+    <p class="sec-sub">网页版（<span class="mono" style="font-size:13.5px">kid.u32.cn/time-tracker</span>）的短板是拿不到系统级状态——锁屏了、电脑睡了、人走了，它照样在倒计时。桌面版把这三件事补上，并坚持一条原则：<strong>宁可少记，不多记。</strong></p>
+    <div class="tri">
+      <div class="cell">
+        <h3>锁屏、睡眠即时结束</h3>
+        <p>人不在就不算学习。系统事件一触发，计时立刻停，浮窗上标注结束原因。</p>
+      </div>
+      <div class="cell">
+        <h3>3 分钟无操作自动停</h3>
+        <p>2 分 30 秒先预警，动一下鼠标就无缝续上。只算到最后一次键鼠操作 + 3 分钟。</p>
+      </div>
+      <div class="cell">
+        <h3>45 分钟滑动窗口管休息</h3>
+        <p>不是「连续学 40 分钟」，是任意时刻往前看 45 分钟，其中必须有 5 分钟不是在学。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="rules">
+    <div class="sec-head"><span class="sec-no">02</span><h2>记账铁律</h2></div>
+    <div class="rule">
+      <p>任何一段学习时长，最多算到<strong>「最后一次键鼠操作 + 3 分钟」</strong>，再往后一律不计。</p>
+      <p class="note">每 5 秒采样一次系统空闲时长。这一条同时覆盖了人走开、看视频不碰鼠标、锁屏、睡眠、断电、进程被杀——凡是没法确认你在的情况，一律不算。停电重启后按最后一次落盘结算。</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-no">03</span><h2>五种结束条件</h2></div>
+    <p class="sec-sub">只有两个状态：没在计时 / 正在计时。没有暂停，结束就是结束，要学重新点开始。</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>触发</th><th>判定</th><th>计入到</th><th>提示</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="k" data-label="触发">目标到点<span class="tag hard">响铃</span></td>
+            <td data-label="判定">你要的 1–40 分钟走完</td>
+            <td data-label="计入到">到点那一刻</td>
+            <td data-label="提示">响铃 + 弹窗</td>
+          </tr>
+          <tr>
+            <td class="k" data-label="触发">休息不足<span class="tag hard">响铃</span></td>
+            <td data-label="判定">最近 45 分钟内学习超过 40 分钟</td>
+            <td data-label="计入到">违规那一刻</td>
+            <td data-label="提示">响铃 + 弹窗</td>
+          </tr>
+          <tr>
+            <td class="k" data-label="触发">无操作<span class="tag hard">响铃</span></td>
+            <td data-label="判定">连续 3 分钟没有键鼠操作；2 分 30 秒时先预警</td>
+            <td data-label="计入到"><strong>最后一次操作 + 3 分钟</strong></td>
+            <td data-label="提示">150 秒预警弹窗（不响铃）；180 秒响铃</td>
+          </tr>
+          <tr>
+            <td class="k" data-label="触发">锁屏 / 睡眠<span class="tag soft">静默</span></td>
+            <td data-label="判定">系统事件</td>
+            <td data-label="计入到">事件那一刻</td>
+            <td data-label="提示">静默，浮窗标注</td>
+          </tr>
+          <tr>
+            <td class="k" data-label="触发">手动停止<span class="tag soft">静默</span></td>
+            <td data-label="判定">点停止按钮</td>
+            <td data-label="计入到">点击那一刻</td>
+            <td data-label="提示">静默</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <pre><b>违规条件：</b>最近 2700 秒内累计学习 &gt; 2400 秒
+<b>等价于：</b>  最近 45 分钟内休息不足 5 分钟</pre>
+    <p class="sec-sub" style="margin-top:20px;margin-bottom:0">所以「学 39 分、歇 1 分、再学 39 分」这种绕法走不通——第二个 39 分钟还没学完就会被拦。<span class="mono" style="font-size:13px;color:var(--ink-3)">180 / 150 / 300 / 2700</span> 都是常量，不开放设置。阈值是规则不是偏好，能调就容易自欺。</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-no">04</span><h2>界面</h2></div>
+    <p class="sec-sub">亮色是暖纸，暗色是同一张纸的夜间版，不是纯黑。文字大小 80%–160% 可调，浮窗跟着一起缩放。</p>
+    <div class="gal">
+      <div class="shot">
+        <div class="shot-bar"><i></i><i></i><i></i><span>LOGS / 学习记录</span></div>
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="screenshots/logs-dark.png">
+          <img src="screenshots/logs-light.png" width="960" height="930" alt="学习记录窗口：按天分组，每组带当天总时长">
+        </picture>
+      </div>
+      <div class="shot">
+        <div class="shot-bar"><i></i><i></i><i></i><span>SETTINGS / 设置</span></div>
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="screenshots/settings-dark.png">
+          <img src="screenshots/settings-light.png" width="960" height="960" alt="设置面板：主题切换与 80%–160% 文字大小滑条">
+        </picture>
+      </div>
+      <div class="shot">
+        <div class="shot-bar"><i></i><i></i><i></i><span>NOTICE / 结束弹窗</span></div>
+        <div class="notice">
+          <img src="screenshots/notice-light.png" width="510" height="342" alt="自动结束弹窗：置顶提醒并响铃 10 秒">
+        </div>
+      </div>
+      <div class="cell">
+        <h3>记录可以改，但不能假装</h3>
+        <p style="margin-bottom:12px">计时记录可作废或重新启用，补记记录可直接删除。作废的仍留在列表里但变灰，统计不计入。</p>
+        <p style="margin:0">自动结束时弹置顶提醒并响铃 10 秒，动一下鼠标它自己就消失。</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-no">05</span><h2>适用与不适用</h2></div>
+    <p class="sec-sub">这个工具最初是作者给自己小孩做学习时间统计的，统计对象是<strong>电脑上的学习时间</strong>——学英语、学编程这类会频繁敲键盘、动鼠标的活动。</p>
+    <div class="twocol" style="margin-top:0">
+      <div class="cell">
+        <h3 style="color:var(--success)">适合</h3>
+        <p>敲键盘、动鼠标的电脑学习。手动点开始，离开 3 分钟自动结束，不需要人记得去停。看视频时 2 分 30 秒有预警，动一下鼠标就继续。</p>
+      </div>
+      <div class="cell">
+        <h3 style="color:var(--warn)">不适合</h3>
+        <p>电脑外的学习——看纸质书、写作业。因为「无操作即停止」，这类场景得每 3 分钟晃一下鼠标续计时，显然不合适。看视频、读书从第 4 分钟起不计时，这是规则的直接后果，不是 bug。</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-no">06</span><h2>安装与实现</h2></div>
+    <p class="sec-sub">从 Releases 下载 <span class="mono" style="font-size:13.5px">time-tracker-setup-x.y.z.exe</span> 双击安装。安装包未签名，SmartScreen 首次运行会提示「已保护你的电脑」，点「更多信息 → 仍要运行」即可。免安装版在 <span class="mono" style="font-size:13.5px">win-unpacked</span> 目录。</p>
+    <div class="spec">
+      <dl><dt>数据位置</dt><dd><span class="mono" style="font-size:13px">%APPDATA%\每日学习计时器\data.json</span>，原子写入</dd></dl>
+      <dl><dt>历史保留</dt><dd>全量保留，不像网页版滚动删除 7 天；统计图仍只画 7 天</dd></dl>
+      <dl><dt>架构</dt><dd>计时逻辑全在主进程，渲染层只负责画</dd></dl>
+      <dl><dt>为什么</dt><dd><span class="mono" style="font-size:13px">powerMonitor.getSystemIdleTime()</span> 只有主进程能用</dd></dl>
+      <dl><dt>内存</dt><dd>Electron 常驻 120–180MB，换来锁屏/睡眠/空闲三件套开箱即用</dd></dl>
+      <dl><dt>测试</dt><dd><span class="mono" style="font-size:13px">npm test</span> — 9 个用例全绿，覆盖截断、预警恢复、窗口拦截、崩溃恢复、跨零点</dd></dl>
+      <dl><dt>升级</dt><dd>从旧版本升级自动迁移 <span class="mono" style="font-size:12.5px">%APPDATA%\时间管理\data.json</span></dd></dl>
+      <dl><dt>许可</dt><dd>MIT</dd></dl>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="wrap foot-in">
+    <div>
+      <p><strong style="color:var(--ink)">每日学习计时器</strong> · v0.3.4 · MIT</p>
+      <p>宁可少记，不多记。</p>
+    </div>
+    <div class="foot-links">
+      <a href="https://github.com/u32-cn/time-tracker">源码</a>
+      <a href="https://github.com/u32-cn/time-tracker/releases">下载</a>
+      <a href="https://kid.u32.cn/time-tracker">网页版</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
